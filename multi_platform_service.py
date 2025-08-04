@@ -252,8 +252,8 @@ class MultiPlatformService:
                                     
                                     # 转换响应格式
                                     platform_type_str = routing_result.platform_type.value
-                                    if platform_type_str == "dashscope":
-                                        converter_type = "qwen"
+                                    if platform_type_str == "custom_openai":
+                                        converter_type = "openai"
                                     elif platform_type_str == "openrouter":
                                         converter_type = "openrouter"
                                     elif platform_type_str == "ollama":
@@ -465,8 +465,8 @@ class MultiPlatformService:
         # 只过滤会导致API调用失败的关键参数
         # 对于OpenRouter，保留OpenAI格式的所有参数，只处理特殊冲突情况
         unsupported_params = {
-            "dashscope": [
-                "tools", "tool_choice", "metadata", 
+            "custom_openai": [
+                # 只过滤Anthropic特有的头部参数，保留OpenAI格式的参数
                 "anthropic-version", "anthropic-beta", "anthropic-dangerous-direct-browser-access"
             ],
             "openrouter": [
@@ -506,17 +506,17 @@ class MultiPlatformService:
         adjusted = kwargs.copy()
         platform_name = platform_type.value
         
-        # DashScope平台限制
-        if platform_name == "dashscope":
-            # max_tokens限制: 1-8192
+        # 自定义OpenAI API平台限制
+        if platform_name == "custom_openai":
+            # max_tokens限制: 1-32768 (较为通用的限制)
             if "max_tokens" in adjusted:
                 original_value = adjusted["max_tokens"]
-                if original_value > 8192:
-                    adjusted["max_tokens"] = 8192
-                    debug_print(f"[DEBUG] DashScope: max_tokens从{original_value}调整为8192")
+                if original_value > 32768:
+                    adjusted["max_tokens"] = 32768
+                    debug_print(f"[DEBUG] CustomOpenAI: max_tokens从{original_value}调整为32768")
                 elif original_value < 1:
                     adjusted["max_tokens"] = 1
-                    debug_print(f"[DEBUG] DashScope: max_tokens从{original_value}调整为1")
+                    debug_print(f"[DEBUG] CustomOpenAI: max_tokens从{original_value}调整为1")
         
         # 其他平台可以在这里添加限制逻辑
         # elif platform_name == "openrouter":
@@ -529,8 +529,9 @@ class MultiPlatformService:
         """获取平台API URL"""
         platform_name = platform_type.value
         
-        if platform_name == "dashscope":
-            return "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+        if platform_name == "custom_openai":
+            base_url = getattr(client, 'base_url', 'https://api.openai.com')
+            return f"{base_url}/v1/chat/completions"
         elif platform_name == "openrouter":
             return "https://openrouter.ai/api/v1/chat/completions"
         elif platform_name == "ollama":
@@ -547,7 +548,7 @@ class MultiPlatformService:
         platform_name = platform_type.value
         headers = {"Content-Type": "application/json"}
         
-        if platform_name == "dashscope":
+        if platform_name == "custom_openai":
             headers["Authorization"] = f"Bearer {client.config.api_key}"
         elif platform_name == "openrouter":
             headers["Authorization"] = f"Bearer {client.config.api_key}"

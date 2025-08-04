@@ -823,32 +823,38 @@
                             <p class="text-sm text-orange-700">统一配置所有AI平台的API Key和服务地址。这些配置将被所有路由模式共享使用。</p>
                         </div>
                         
-                        <!-- 阿里云百炼 -->
+                        <!-- 自定义OpenAI API -->
                         <div class="border border-gray-200 rounded-lg p-4 mb-4">
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex items-center space-x-3">
-                                    <h5 class="font-medium text-gray-900">阿里云百炼 (DashScope)</h5>
-                                    <span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">云端API</span>
+                                    <h5 class="font-medium text-gray-900">自定义OpenAI API</h5>
+                                    <span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">兼容OpenAI</span>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <button id="test-dashscope" class="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded transition-colors">
+                                    <button id="test-custom-openai" class="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded transition-colors">
                                         测试
                                     </button>
                                     <label class="flex items-center">
-                                        <input type="checkbox" id="dashscope-enabled" class="platform-enabled rounded border-gray-300 text-blue-600">
+                                        <input type="checkbox" id="custom-openai-enabled" class="platform-enabled rounded border-gray-300 text-blue-600">
                                         <span class="ml-1 text-sm text-gray-600">启用</span>
                                     </label>
                                 </div>
                             </div>
                             <div class="space-y-3">
                                 <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">API 地址</label>
+                                    <input type="text" id="custom-openai-base-url" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
+                                           placeholder="https://api.openai.com" value="https://api.openai.com">
+                                    <p class="text-xs text-gray-500 mt-1">支持OpenAI官方API或兼容的第三方API服务</p>
+                                </div>
+                                <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                                    <input type="text" id="dashscope-api-key" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
-                                           placeholder="输入您的DashScope API Key">
+                                    <input type="text" id="custom-openai-api-key" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" 
+                                           placeholder="输入您的API Key">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">可用模型</label>
-                                    <div id="dashscope-models" class="text-xs text-gray-500 min-h-[20px]">
+                                    <div id="custom-openai-models" class="text-xs text-gray-500 min-h-[20px]">
                                         点击测试按钮获取可用模型列表
                                     </div>
                                 </div>
@@ -1577,8 +1583,8 @@
                             </h5>
                             <div class="grid grid-cols-2 gap-3 text-sm text-gray-600">
                                 <div class="flex items-start space-x-2">
-                                    <span class="text-blue-500">☁️</span>
-                                    <span>阿里云百炼 (DashScope)</span>
+                                    <span class="text-blue-500">🔗</span>
+                                    <span>自定义OpenAI API (兼容)</span>
                                 </div>
                                 <div class="flex items-start space-x-2">
                                     <span class="text-purple-500">🌐</span>

@@ -114,7 +114,7 @@ class APIHookMonitor {
         document.getElementById('refresh-all-models').addEventListener('click', () => this.refreshAllModels());
         
         // 单独平台测试按钮
-        document.getElementById('test-dashscope').addEventListener('click', () => this.testSinglePlatform('dashscope'));
+        document.getElementById('test-custom-openai').addEventListener('click', () => this.testSinglePlatform('custom_openai'));
         document.getElementById('test-openrouter').addEventListener('click', () => this.testSinglePlatform('openrouter'));
         document.getElementById('test-ollama').addEventListener('click', () => this.testSinglePlatform('ollama'));
         document.getElementById('test-lmstudio').addEventListener('click', () => this.testSinglePlatform('lmstudio'));
@@ -932,10 +932,12 @@ class APIHookMonitor {
     }
 
     renderPlatformModels(models) {
-        const platformTypes = ['dashscope', 'openrouter', 'ollama', 'lmstudio'];
+        const platformTypes = ['custom_openai', 'openrouter', 'ollama', 'lmstudio'];
         
         platformTypes.forEach(platformType => {
-            const modelsDiv = document.getElementById(`${platformType}-models`);
+            // 转换平台类型为HTML元素ID格式（下划线转连字符）
+            const elementIdPrefix = platformType.replace('_', '-');
+            const modelsDiv = document.getElementById(`${elementIdPrefix}-models`);
             if (modelsDiv) {
                 const platformModels = models.filter(model => model.platform === platformType);
                 
@@ -1633,12 +1635,15 @@ class APIHookMonitor {
     }
 
     async savePlatformConfigs() {
-        const platforms = ['dashscope', 'openrouter', 'ollama', 'lmstudio'];
+        const platforms = ['custom_openai', 'openrouter', 'ollama', 'lmstudio'];
         
         for (const platform of platforms) {
-            const enabled = document.getElementById(`${platform}-enabled`)?.checked || false;
-            const apiKey = document.getElementById(`${platform}-api-key`)?.value || '';
-            const baseUrl = document.getElementById(`${platform}-base-url`)?.value || '';
+            // 转换平台类型为HTML元素ID格式（下划线转连字符）
+            const elementIdPrefix = platform.replace('_', '-');
+            
+            const enabled = document.getElementById(`${elementIdPrefix}-enabled`)?.checked || false;
+            const apiKey = document.getElementById(`${elementIdPrefix}-api-key`)?.value || '';
+            const baseUrl = document.getElementById(`${elementIdPrefix}-base-url`)?.value || '';
             
             const platformData = {
                 platform_type: platform,
@@ -1677,8 +1682,8 @@ class APIHookMonitor {
                 const platformElement = item.querySelector('.text-xs.text-gray-500');
                 const platform = platformElement ? platformElement.textContent.trim() : 'unknown';
                 
-                // 检查是否已经有正确的平台前缀（dashscope:, openrouter:, ollama:, lmstudio:）
-                const validPlatforms = ['dashscope', 'openrouter', 'ollama', 'lmstudio'];
+                // 检查是否已经有正确的平台前缀（custom_openai:, openrouter:, ollama:, lmstudio:）
+                const validPlatforms = ['custom_openai', 'openrouter', 'ollama', 'lmstudio'];
                 const hasValidPlatformPrefix = validPlatforms.some(p => modelId.startsWith(p + ':'));
                 
                 if (hasValidPlatformPrefix) {
@@ -2354,7 +2359,7 @@ class APIHookMonitor {
     // 获取平台颜色
     getPlatformColor(platform) {
         const colors = {
-            'dashscope': 'bg-blue-500',
+            'custom_openai': 'bg-blue-500',
             'openrouter': 'bg-purple-500',
             'ollama': 'bg-green-500',
             'lmstudio': 'bg-orange-500'
@@ -2744,8 +2749,11 @@ class APIHookMonitor {
     async testSinglePlatform(platformType) {
         console.log(`🧪 [Frontend] 测试单个平台: ${platformType}`);
         
-        const button = document.getElementById(`test-${platformType}`);
-        const modelsDiv = document.getElementById(`${platformType}-models`);
+        // 转换平台类型为HTML元素ID格式（下划线转连字符）
+        const elementIdPrefix = platformType.replace('_', '-');
+        
+        const button = document.getElementById(`test-${elementIdPrefix}`);
+        const modelsDiv = document.getElementById(`${elementIdPrefix}-models`);
         const originalText = button.textContent;
         
         // 更新按钮状态
@@ -2813,9 +2821,12 @@ class APIHookMonitor {
     async saveSinglePlatformConfig(platformType) {
         console.log(`💾 [Frontend] 保存单个平台配置: ${platformType}`);
         
-        const enabled = document.getElementById(`${platformType}-enabled`)?.checked || false;
-        const apiKey = document.getElementById(`${platformType}-api-key`)?.value || '';
-        const baseUrl = document.getElementById(`${platformType}-base-url`)?.value || '';
+        // 转换平台类型为HTML元素ID格式（下划线转连字符）
+        const elementIdPrefix = platformType.replace('_', '-');
+        
+        const enabled = document.getElementById(`${elementIdPrefix}-enabled`)?.checked || false;
+        const apiKey = document.getElementById(`${elementIdPrefix}-api-key`)?.value || '';
+        const baseUrl = document.getElementById(`${elementIdPrefix}-base-url`)?.value || '';
         
         const platformData = {
             platform_type: platformType,
@@ -3514,14 +3525,14 @@ class APIHookMonitor {
             
             if (record.target_platform === 'openrouter') {
                 return `${record.platform_base_url}/chat/completions`;
-            } else if (record.target_platform === 'dashscope') {
+            } else if (record.target_platform === 'custom_openai') {
                 if (record.target_model === 'claude-code-proxy') {
                     // Claude Code 模式
                     const remainingPath = basePath.substring('/api/v1/claude-code'.length);
                     return `${record.platform_base_url}/api/v2/apps/claude-code-proxy${remainingPath}`;
                 } else {
-                    // 其他DashScope模型
-                    return `${record.platform_base_url}/compatible-mode/v1/chat/completions`;
+                    // 其他自定义OpenAI模型
+                    return `${record.platform_base_url}/v1/chat/completions`;
                 }
             } else if (record.target_platform === 'ollama') {
                 return `${record.platform_base_url}/api/chat`;

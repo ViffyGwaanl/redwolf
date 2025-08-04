@@ -49,7 +49,7 @@ class PlatformConfig(Base):
     __tablename__ = "platform_configs"
     
     id = Column(Integer, primary_key=True, index=True)
-    platform_type = Column(String, unique=True, index=True)  # dashscope, openrouter, ollama, lmstudio
+    platform_type = Column(String, unique=True, index=True)  # custom_openai, openrouter, ollama, lmstudio
     api_key = Column(String)
     base_url = Column(String)
     enabled = Column(Boolean, default=True)

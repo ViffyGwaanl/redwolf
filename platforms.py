@@ -1,6 +1,6 @@
 """
 多平台API服务模块
-支持阿里云百炼、OpenRouter、Ollama、LMStudio等平台
+支持自定义OpenAI API、OpenRouter、Ollama、LMStudio等平台
 """
 
 import httpx
@@ -25,7 +25,7 @@ def debug_print(*args, **kwargs):
 
 class PlatformType(Enum):
     """平台类型枚举"""
-    DASHSCOPE = "dashscope"  # 阿里云百炼
+    CUSTOM_OPENAI = "custom_openai"  # 自定义OpenAI API
     OPENROUTER = "openrouter"
     OLLAMA = "ollama"
     LMSTUDIO = "lmstudio"
@@ -78,94 +78,80 @@ class PlatformClient:
             logger.error(f"Platform {self.config.platform_type} connection test failed: {e}")
             return False
 
-class DashScopeClient(PlatformClient):
-    """阿里云百炼客户端"""
+class CustomOpenAIClient(PlatformClient):
+    """自定义OpenAI API客户端"""
     
     def __init__(self, config: PlatformConfig):
         super().__init__(config)
-        self.base_url = "https://dashscope.aliyuncs.com"
+        self.base_url = config.base_url or "https://api.openai.com"
     
     async def get_models(self) -> List[ModelInfo]:
-        """获取通义千问模型列表"""
-        logger.info("🔍 [DashScope] 开始获取模型列表...")
+        """获取自定义OpenAI API模型列表"""
+        logger.info("🔍 [CustomOpenAI] 开始获取模型列表...")
         
         if not self.config.api_key:
-            logger.warning("⚠️ [DashScope] API Key未配置，跳过获取模型")
+            logger.warning("⚠️ [CustomOpenAI] API Key未配置，跳过获取模型")
             return []
         
         try:
-            logger.info(f"🌐 [DashScope] 请求URL: {self.base_url}/compatible-mode/v1/models")
+            logger.info(f"🌐 [CustomOpenAI] 请求URL: {self.base_url}/v1/models")
             async with httpx.AsyncClient(timeout=self.config.timeout) as client:
                 response = await client.get(
-                    f"{self.base_url}/compatible-mode/v1/models",
+                    f"{self.base_url}/v1/models",
                     headers={
                         "Authorization": f"Bearer {self.config.api_key}",
                         "Content-Type": "application/json"
                     }
                 )
                 
-                logger.info(f"📡 [DashScope] API响应状态: {response.status_code}")
+                logger.info(f"📡 [CustomOpenAI] API响应状态: {response.status_code}")
                 
                 if response.status_code == 200:
                     data = response.json()
                     models = []
                     
-                    logger.info(f"📋 [DashScope] 响应数据: {json.dumps(data, indent=2, ensure_ascii=False)}")
+                    logger.info(f"📋 [CustomOpenAI] 响应数据: {json.dumps(data, indent=2, ensure_ascii=False)}")
                     
-                    # 解析模型列表
-                    if "output" in data and "models" in data["output"]:
-                        for model in data["output"]["models"]:
-                            model_name = model.get("model_name", "")
-                            model_info = ModelInfo(
-                                id=model_name,
-                                name=model_name,
-                                platform=PlatformType.DASHSCOPE,
-                                description=f"容量: {model.get('base_capacity', 1)}"
-                            )
-                            models.append(model_info)
-    
-                    elif "data" in data:
-                        # 兼容旧格式
+                    # 解析标准OpenAI API模型列表格式
+                    if "data" in data:
                         for model in data["data"]:
                             model_info = ModelInfo(
                                 id=model.get("id", ""),
-                                name=model.get("name", model.get("id", "")),
-                                platform=PlatformType.DASHSCOPE,
-                                description=model.get("description", "")
+                                name=model.get("id", ""),
+                                platform=PlatformType.CUSTOM_OPENAI,
+                                description=model.get("description", f"创建时间: {model.get('created', 'Unknown')}")
                             )
                             models.append(model_info)
-    
                     else:
-                        # 如果API返回格式不匹配，添加一些默认的通义千问模型
-                        logger.info("⚠️ [DashScope] API响应格式不匹配，使用默认模型列表")
+                        # 如果API返回格式不匹配，添加一些常见的默认模型
+                        logger.info("⚠️ [CustomOpenAI] API响应格式不匹配，使用默认模型列表")
                         default_models = [
-                            {"id": "qwen-plus", "name": "qwen-plus", "description": "通义千问增强版"},
-                            {"id": "qwen-turbo", "name": "qwen-turbo", "description": "通义千问快速版"},
-                            {"id": "qwen-max", "name": "qwen-max", "description": "通义千问最强版"},
-                            {"id": "qwen-coder", "name": "qwen-coder", "description": "专门用于代码生成和优化"},
-                            {"id": "qwen3-coder-plus", "name": "qwen3-coder-plus", "description": "通义千问3代码增强版"},
-                            {"id": "qwen2.5-coder-instruct", "name": "qwen2.5-coder-instruct", "description": "通义千问2.5代码指令版"},
-                            {"id": "qwen2-72b-instruct", "name": "qwen2-72b-instruct", "description": "通义千问2 72B指令版"},
+                            {"id": "gpt-4", "name": "gpt-4", "description": "GPT-4 模型"},
+                            {"id": "gpt-4-turbo", "name": "gpt-4-turbo", "description": "GPT-4 Turbo 模型"},
+                            {"id": "gpt-3.5-turbo", "name": "gpt-3.5-turbo", "description": "GPT-3.5 Turbo 模型"},
+                            {"id": "claude-3-opus", "name": "claude-3-opus", "description": "Claude 3 Opus 模型"},
+                            {"id": "claude-3-sonnet", "name": "claude-3-sonnet", "description": "Claude 3 Sonnet 模型"},
+                            {"id": "claude-3-haiku", "name": "claude-3-haiku", "description": "Claude 3 Haiku 模型"},
                         ]
                         
                         for model in default_models:
                             model_info = ModelInfo(
                                 id=model["id"],
                                 name=model["name"],
-                                platform=PlatformType.DASHSCOPE,
+                                platform=PlatformType.CUSTOM_OPENAI,
                                 description=model["description"]
                             )
                             models.append(model_info)
             
                     
-                    logger.info(f"✅ [DashScope] 成功获取 {len(models)} 个模型")
+                    logger.info(f"✅ [CustomOpenAI] 成功获取 {len(models)} 个模型")
                     return models
                 else:
-                    logger.error(f"❌ [DashScope] API错误: {response.status_code} - {response.text}")
+                    logger.error(f"❌ [CustomOpenAI] API错误: {response.status_code} - {response.text}")
                     return []
                     
         except Exception as e:
-            logger.error(f"❌ [DashScope] 获取模型失败: {e}")
+            logger.error(f"❌ [CustomOpenAI] 获取模型失败: {e}")
             return []
     
     async def chat_completion(
@@ -175,12 +161,12 @@ class DashScopeClient(PlatformClient):
         stream: bool = False,
         **kwargs
     ) -> AsyncGenerator[str, None]:
-        """通义千问聊天补全"""
+        """自定义OpenAI API聊天补全"""
         if not self.config.api_key:
             yield json.dumps({"error": "API key not configured"})
             return
         
-        url = f"{self.base_url}/compatible-mode/v1/chat/completions"
+        url = f"{self.base_url}/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.config.api_key}",
             "Content-Type": "application/json"
@@ -220,7 +206,7 @@ class DashScopeClient(PlatformClient):
                         yield json.dumps({"error": f"API error: {response.status_code} - {response.text}"})
                         
         except Exception as e:
-            logger.error(f"DashScope chat completion error: {e}")
+            logger.error(f"CustomOpenAI chat completion error: {e}")
             yield json.dumps({"error": f"Request failed: {str(e)}"})
 
 class OpenRouterClient(PlatformClient):
@@ -548,8 +534,8 @@ class PlatformManager:
     
     def add_platform(self, config: PlatformConfig):
         """添加平台"""
-        if config.platform_type == PlatformType.DASHSCOPE:
-            client = DashScopeClient(config)
+        if config.platform_type == PlatformType.CUSTOM_OPENAI:
+            client = CustomOpenAIClient(config)
         elif config.platform_type == PlatformType.OPENROUTER:
             client = OpenRouterClient(config)
         elif config.platform_type == PlatformType.OLLAMA:
